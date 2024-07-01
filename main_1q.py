@@ -43,7 +43,6 @@ class QuantumChallengeApp:
 
         self.create_gate(self.gate_palette, "X")
         self.create_gate(self.gate_palette, "H")
-        self.create_gate(self.gate_palette, "CNOT")
 
         # Control Buttons
         self.control_buttons_frame = tk.Frame(self.root)
@@ -116,8 +115,7 @@ class QuantumChallengeApp:
 
     def next_level(self):
         self.current_level += 1
-        if self.current_level > 3:
-            messagebox.showinfo("Congratulations!", "You've completed all levels!")
+        if self.current_level > 2:  # Changed from 3 to 2
             self.current_level = 1
         self.reset_challenge()
 
@@ -126,9 +124,6 @@ class QuantumChallengeApp:
             self.apply_x_gate()
         elif gate == "H":
             self.apply_h_gate()
-        elif gate == "CNOT":
-            # Assuming this is the first qubit, you can expand this to multiple qubits later
-            self.apply_cnot_gate()
         
         self.update_qubit_labels()
         self.check_solution()
@@ -143,19 +138,14 @@ class QuantumChallengeApp:
         self.state_vector = np.dot(h_gate, self.state_vector)
         self.update_visualizations()
 
-    def apply_cnot_gate(self):
-        # This implementation is a placeholder for future expansion to multi-qubit systems.
-        pass
-
     def update_qubit_labels(self):
         state_str = self.format_state_vector()
         self.instructions_label.config(text=f"State Vector: {state_str}")
 
     def set_instructions(self):
         instructions = {
-            1: "Level 1: Transform the qubit from |0⟩ to |1⟩ using the X gate.",
-            2: "Level 2: Create a superposition state using the H gate.",
-            3: "Level 3: Entangle two qubits to create the Bell state using the H and CNOT gates."
+            1: "Level 1: Transform the qubit from |0⟩ to |1⟩.",
+            2: "Level 2: Create a superposition state.",
         }
         self.instructions_label.config(text=instructions[self.current_level])
 
@@ -163,7 +153,6 @@ class QuantumChallengeApp:
         solutions = {
             1: np.array([[0], [1]]),  # |1⟩ state
             2: (1 / np.sqrt(2)) * np.array([[1], [1]]),  # superposition state
-            3: None  # Placeholder for multi-qubit entanglement check
         }
         solution = solutions[self.current_level]
         if solution is not None and np.allclose(self.state_vector, solution):
