@@ -1,0 +1,17 @@
+.App {
+  text-align: center;
+}
+
+.circuit-line {
+  margin: 20px auto;
+}
+
+.gate-palette {
+  margin: 20px auto;
+}
+
+.gate-palette button {
+  margin: 5px;
+  padding: 10px;
+  font-size: 16px;
+}
