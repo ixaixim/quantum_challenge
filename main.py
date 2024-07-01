@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import messagebox
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import numpy as np
 import os
 
 # Set up virtual display if not available
@@ -16,6 +17,7 @@ class QuantumChallengeApp:
         self.root.title("Quantum Challenge")
         self.current_level = 1
         self.selected_gate = None
+        self.state_vector = np.array([[1], [0]])  # Start with |0⟩ state
         self.create_widgets()
         self.reset_challenge()
 
@@ -76,6 +78,16 @@ class QuantumChallengeApp:
         self.prob_canvas.get_tk_widget().pack()
 
         self.update_probabilities([1, 0])
+        
+        # LaTeX Result Frame
+        self.latex_frame = tk.Frame(self.root)
+        self.latex_frame.pack(pady=10)
+        
+        self.latex_figure, self.latex_ax = plt.subplots()
+        self.latex_canvas = FigureCanvasTkAgg(self.latex_figure, master=self.latex_frame)
+        self.latex_canvas.get_tk_widget().pack()
+
+        self.update_latex_result(r'|0\rangle')
 
     def create_gate(self, parent, text):
         button = tk.Button(parent, text=text, bg="blue", fg="white", width=5, command=lambda: self.on_gate_select(text))
@@ -93,40 +105,51 @@ class QuantumChallengeApp:
             self.selected_gate = None
 
     def reset_challenge(self):
-        self.qubits = ["|0⟩"]
+        self.state_vector = np.array([[1], [0]])  # Reset to |0⟩ state
         self.update_qubit_labels()
         self.set_instructions()
         self.update_bloch_sphere([0, 0, 1])
         self.update_probabilities([1, 0])
+        self.update_latex_result(r'|0\rangle')
         self.circuit_canvas.delete("gate")
         self.gate_items.clear()
 
     def next_level(self):
         self.current_level += 1
-        if (self.current_level > 3):
+        if self.current_level > 3:
             messagebox.showinfo("Congratulations!", "You've completed all levels!")
             self.current_level = 1
         self.reset_challenge()
 
     def apply_gate(self, gate):
         if gate == "X":
-            self.qubits[0] = "|1⟩" if self.qubits[0] == "|0⟩" else "|0⟩"
-            self.update_bloch_sphere([0, 0, -1] if self.qubits[0] == "|1⟩" else [0, 0, 1])
-            self.update_probabilities([0, 1] if self.qubits[0] == "|1⟩" else [1, 0])
+            self.apply_x_gate()
         elif gate == "H":
-            self.qubits[0] = "superposition"
-            self.update_bloch_sphere([1, 0, 0])
-            self.update_probabilities([0.5, 0.5])
+            self.apply_h_gate()
         elif gate == "CNOT":
             # Assuming this is the first qubit, you can expand this to multiple qubits later
-            if self.qubits[0] == "superposition":
-                self.qubits[0] = "entangled"
-                self.update_probabilities([0.5, 0.5])  # This is a simplification
+            self.apply_cnot_gate()
+        
         self.update_qubit_labels()
         self.check_solution()
 
+    def apply_x_gate(self):
+        x_gate = np.array([[0, 1], [1, 0]])
+        self.state_vector = np.dot(x_gate, self.state_vector)
+        self.update_visualizations()
+
+    def apply_h_gate(self):
+        h_gate = (1 / np.sqrt(2)) * np.array([[1, 1], [1, -1]])
+        self.state_vector = np.dot(h_gate, self.state_vector)
+        self.update_visualizations()
+
+    def apply_cnot_gate(self):
+        # This implementation is a placeholder for future expansion to multi-qubit systems.
+        pass
+
     def update_qubit_labels(self):
-        self.instructions_label.config(text=f"Qubit: {self.qubits[0]}")
+        state_str = self.format_state_vector()
+        self.instructions_label.config(text=f"State Vector: {state_str}")
 
     def set_instructions(self):
         instructions = {
@@ -138,12 +161,39 @@ class QuantumChallengeApp:
 
     def check_solution(self):
         solutions = {
-            1: ["|1⟩"],
-            2: ["superposition"],
-            3: ["entangled"]  # Simplification for single qubit
+            1: np.array([[0], [1]]),  # |1⟩ state
+            2: (1 / np.sqrt(2)) * np.array([[1], [1]]),  # superposition state
+            3: None  # Placeholder for multi-qubit entanglement check
         }
-        if self.qubits == solutions[self.current_level]:
+        solution = solutions[self.current_level]
+        if solution is not None and np.allclose(self.state_vector, solution):
             messagebox.showinfo("Success!", f"You've completed Level {self.current_level}!")
+
+    def update_visualizations(self):
+        bloch_vector = self.state_to_bloch_vector()
+        self.update_bloch_sphere(bloch_vector)
+        probabilities = self.state_to_probabilities()
+        self.update_probabilities(probabilities)
+        state_str = self.format_state_vector()
+        self.update_latex_result(state_str)
+
+    def state_to_bloch_vector(self):
+        alpha = self.state_vector[0, 0]
+        beta = self.state_vector[1, 0]
+        bloch_x = 2 * np.real(np.conj(alpha) * beta)
+        bloch_y = 2 * np.imag(np.conj(alpha) * beta)
+        bloch_z = np.abs(alpha)**2 - np.abs(beta)**2
+        return [bloch_x, bloch_y, bloch_z]
+
+    def state_to_probabilities(self):
+        probabilities = np.abs(self.state_vector)**2
+        return probabilities.flatten().tolist()
+
+    def format_state_vector(self):
+        alpha = self.state_vector[0, 0]
+        beta = self.state_vector[1, 0]
+        state_str = f'{alpha:.2f}|0⟩ + {beta:.2f}|1⟩'
+        return state_str
 
     def update_bloch_sphere(self, vector):
         self.ax.cla()
@@ -167,6 +217,12 @@ class QuantumChallengeApp:
         self.prob_ax.set_ylabel('Probability')
         self.prob_ax.set_title('Probabilities')
         self.prob_canvas.draw()
+    
+    def update_latex_result(self, latex_str):
+        self.latex_ax.cla()
+        self.latex_ax.text(0.5, 0.5, f'${latex_str}$', horizontalalignment='center', verticalalignment='center', fontsize=20)
+        self.latex_ax.axis('off')
+        self.latex_canvas.draw()
 
 if __name__ == "__main__":
     root = tk.Tk()
