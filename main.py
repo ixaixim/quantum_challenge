@@ -14,6 +14,7 @@ class QuantumChallengeApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Quantum Challenge")
+        # self.root.attributes("-fullscreen", True) 
         self.current_level = 1
         self.selected_gate = None
         self.create_widgets()
