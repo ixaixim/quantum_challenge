@@ -24,11 +24,11 @@ class QuantumChallengeApp:
 
     def create_widgets(self):
         # Title Label
-        self.title_label = tk.Label(self.root, text="Quantum Challenge", font=("Helvetica", 16))
+        self.title_label = tk.Label(self.root, text="Quantum Challenge", font=("Helvetica", 30, "bold"))
         self.title_label.pack(pady=10)
 
         # Instructions Label
-        self.instructions_label = tk.Label(self.root, text="", wraplength=400, font=("Helvetica", 12))
+        self.instructions_label = tk.Label(self.root)
         self.instructions_label.pack(pady=10)
 
         # Circuit Canvas
@@ -51,14 +51,8 @@ class QuantumChallengeApp:
         self.reset_button = tk.Button(self.control_buttons_frame, text="Reset", command=self.reset_challenge)
         self.reset_button.pack(side=tk.LEFT, padx=5)
 
-        self.next_button = tk.Button(self.control_buttons_frame, text="Next Level", command=self.next_level)
+        self.next_button = tk.Button(self.control_buttons_frame, text="Next Level", command=self.next_level)        
         self.next_button.pack(side=tk.LEFT, padx=5)
-
-        # Qubit Selection for Level 3
-        self.qubit_selection_frame = tk.Frame(self.root)
-        self.qubit_selection_frame.pack(pady=10)
-        tk.Radiobutton(self.qubit_selection_frame, text="Qubit 0", variable=self.selected_qubit, value=0).pack(side=tk.LEFT, padx=5)
-        tk.Radiobutton(self.qubit_selection_frame, text="Qubit 1", variable=self.selected_qubit, value=1).pack(side=tk.LEFT, padx=5)
 
         # Visualization Frames
         self.visualization_frame = tk.Frame(self.root)
@@ -88,11 +82,15 @@ class QuantumChallengeApp:
         self.latex_frame = tk.Frame(self.root)
         self.latex_frame.pack(pady=10)
         
-        self.latex_figure, self.latex_ax = plt.subplots()
+        self.latex_figure, self.latex_ax = plt.subplots(figsize=(7, 1))
         self.latex_canvas = FigureCanvasTkAgg(self.latex_figure, master=self.latex_frame)
         self.latex_canvas.get_tk_widget().pack()
 
         self.update_latex_result(r'|0\rangle')
+
+        self.back_button = tk.Button(self.control_buttons_frame, text="Back to Level 1", command=self.go_to_level_1)
+        self.back_button.pack(side=tk.LEFT, padx=5)
+
 
     def create_gate(self, parent, text):
         button = tk.Button(parent, text=text, bg="blue", fg="white", width=5, command=lambda: self.on_gate_select(text))
@@ -117,6 +115,10 @@ class QuantumChallengeApp:
         self.current_level += 1
         if self.current_level > 3:
             self.current_level = 1
+        self.reset_challenge()
+
+    def go_to_level_1(self):
+        self.current_level = 1
         self.reset_challenge()
 
     def apply_gate(self, gate):
@@ -180,11 +182,13 @@ class QuantumChallengeApp:
 
     def set_instructions(self):
         instructions = {
-            1: "Level 1: Transform the qubit from |0⟩ to |1⟩.",
+            1: "Level 1: Transform the qubit from",
             2: "Level 2: Create a superposition state.",
-            3: "Level 3: Create a Bell state: |00⟩ + |11⟩.",
+            3: "Level 3: Create a Bell state: ",
         }
         self.instructions_label.config(text=instructions[self.current_level])
+        # Repack the widget to apply the font size change
+        self.instructions_label.pack()
 
     def check_solution(self):
         solutions = {
@@ -206,8 +210,8 @@ class QuantumChallengeApp:
             self.update_latex_result(latex_state)
         else:
             # For Bell state, clear images and only update the probabilities and LaTeX result
-            self.ax.clear()
-    
+            self.ax.clear()    
+            self.bloch_canvas.get_tk_widget().pack_forget()  # Hide the Bloch sphere widget
             probabilities = self.state_to_probabilities(self.state_vector)
             latex_state = self.state_to_latex(self.state_vector)
             self.update_latex_result(latex_state)
@@ -240,6 +244,8 @@ class QuantumChallengeApp:
         self.ax.set_ylabel('Y')
         self.ax.set_zlabel('Z')
         self.bloch_canvas.draw()
+        self.bloch_canvas.get_tk_widget().pack(side=tk.LEFT, fill=tk.BOTH, expand=True)  # Adjust as per your layout
+
 
     def update_probabilities(self, probabilities):
         self.prob_ax.clear()
@@ -248,6 +254,7 @@ class QuantumChallengeApp:
         self.prob_ax.set_xticklabels([f"|{i}⟩" for i in range(len(probabilities))])
         self.prob_ax.set_ylabel('Probability')
         self.prob_canvas.draw()
+        
 
     def update_probabilities_2q(self, probabilities):
         probabilities = np.abs(self.state_vector)**2
