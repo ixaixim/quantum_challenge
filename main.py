@@ -16,6 +16,7 @@ class QuantumChallengeApp:
         self.root = root
         self.root.title("Quantum Challenge")
         self.current_level = 1
+        self.levels_passed = 0  # Step 1: Track levels passed
         self.selected_gate = None
         self.selected_qubit = tk.IntVar(value=0)
         self.state_vector = np.array([[1], [0]])  # Start with |0⟩ state
@@ -30,6 +31,10 @@ class QuantumChallengeApp:
         # Instructions Label
         self.instructions_label = tk.Label(self.root)
         self.instructions_label.pack(pady=10)
+
+        # Levels Passed Label
+        self.levels_passed_label = tk.Label(self.root, text=f"Levels Passed: {self.levels_passed}", font=("Helvetica", 16))
+        self.levels_passed_label.pack(pady=10)
 
         # Circuit Canvas
         self.circuit_canvas = tk.Canvas(self.root, width=400, height=100, bg="white")
@@ -51,8 +56,11 @@ class QuantumChallengeApp:
         self.reset_button = tk.Button(self.control_buttons_frame, text="Reset", command=self.reset_challenge)
         self.reset_button.pack(side=tk.LEFT, padx=5)
 
-        self.next_button = tk.Button(self.control_buttons_frame, text="Next Level", command=self.next_level)        
-        self.next_button.pack(side=tk.LEFT, padx=5)
+        # self.next_button = tk.Button(self.control_buttons_frame, text="Next Level", command=self.next_level)        
+        # self.next_button.pack(side=tk.LEFT, padx=5)
+
+        self.back_button = tk.Button(self.control_buttons_frame, text="Back to Level 1", command=self.go_to_level_1)
+        self.back_button.pack(side=tk.LEFT, padx=5)
 
         # Visualization Frames
         self.visualization_frame = tk.Frame(self.root)
@@ -88,8 +96,6 @@ class QuantumChallengeApp:
 
         self.update_latex_result(r'|0\rangle')
 
-        self.back_button = tk.Button(self.control_buttons_frame, text="Back to Level 1", command=self.go_to_level_1)
-        self.back_button.pack(side=tk.LEFT, padx=5)
 
 
     def create_gate(self, parent, text):
@@ -113,12 +119,20 @@ class QuantumChallengeApp:
 
     def next_level(self):
         self.current_level += 1
+        self.levels_passed += 1  # Increment levels passed
         if self.current_level > 3:
             self.current_level = 1
+            self.levels_passed = 0  # Reset levels passed at level 1            
         self.reset_challenge()
+
+    def update_levels_passed_display(self):
+        # Step 5: Update the display of levels passed
+        self.levels_passed_label.config(text=f"Levels Passed: {self.levels_passed}")    
 
     def go_to_level_1(self):
         self.current_level = 1
+        self.levels_passed = 0  # Reset levels passed at level 1
+        self.update_levels_passed_display()  # Update the display of levels passed
         self.reset_challenge()
 
     def apply_gate(self, gate):
@@ -199,6 +213,9 @@ class QuantumChallengeApp:
         if np.allclose(self.state_vector, solutions[self.current_level]):
             messagebox.showinfo("Success", "Congratulations! You've completed the level.")
             self.next_level()
+            
+            self.update_levels_passed_display()  # Update the display of levels passed, if applicable
+
 
     def update_visualizations(self):
         if self.current_level < 3:
@@ -211,11 +228,13 @@ class QuantumChallengeApp:
         else:
             # For Bell state, clear images and only update the probabilities and LaTeX result
             self.ax.clear()    
-            self.bloch_canvas.get_tk_widget().pack_forget()  # Hide the Bloch sphere widget
+            bloch_vector = np.array([[1], [0]]) # placeholder
+            self.update_bloch_sphere(bloch_vector)
             probabilities = self.state_to_probabilities(self.state_vector)
+            self.update_probabilities_2q(probabilities)
+
             latex_state = self.state_to_latex(self.state_vector)
             self.update_latex_result(latex_state)
-            self.update_probabilities_2q(probabilities)
 
     def state_to_bloch(self, state_vector):
         a, b = state_vector[0, 0], state_vector[1, 0]
@@ -235,16 +254,23 @@ class QuantumChallengeApp:
         return ", ".join([f"{amp:.2f}" for amp in self.state_vector.flatten()])
 
     def update_bloch_sphere(self, vector):
-        self.ax.clear()
-        self.ax.quiver(0, 0, 0, vector[0], vector[1], vector[2], color='r', arrow_length_ratio=0.1)
-        self.ax.set_xlim([-1, 1])
-        self.ax.set_ylim([-1, 1])
-        self.ax.set_zlim([-1, 1])
-        self.ax.set_xlabel('X')
-        self.ax.set_ylabel('Y')
-        self.ax.set_zlabel('Z')
-        self.bloch_canvas.draw()
-        self.bloch_canvas.get_tk_widget().pack(side=tk.LEFT, fill=tk.BOTH, expand=True)  # Adjust as per your layout
+        if self.current_level < 3:
+            self.ax.clear()
+            self.ax.quiver(0, 0, 0, vector[0], vector[1], vector[2], color='r', arrow_length_ratio=0.1)
+            self.ax.set_xlim([-1, 1])
+            self.ax.set_ylim([-1, 1])
+            self.ax.set_zlim([-1, 1])
+            self.ax.set_xlabel('X')
+            self.ax.set_ylabel('Y')
+            self.ax.set_zlabel('Z')
+            self.bloch_canvas.draw()
+            self.bloch_canvas.get_tk_widget().pack(side=tk.LEFT, fill=tk.BOTH, expand=True)  # Adjust as per your layout
+        else:
+            self.ax.cla()
+            self.ax.axis('off')
+            self.ax.text(0.5, 0.5, 0.5, "Hint: Try using a different gate combination", fontsize=12, ha='center')
+            self.bloch_canvas.draw()
+            self.bloch_canvas.get_tk_widget().pack(side=tk.LEFT, fill=tk.BOTH, expand=True)  # Adjust as per your layout
 
 
     def update_probabilities(self, probabilities):
@@ -267,6 +293,8 @@ class QuantumChallengeApp:
         self.prob_ax.set_ylabel('Probability')
         self.prob_ax.set_title('Probabilities')
         self.prob_canvas.draw()
+
+
 
     def update_latex_result(self, latex_str):
         self.latex_ax.clear()
