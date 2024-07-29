@@ -4,6 +4,7 @@ from qiskit import QuantumCircuit, transpile
 from qiskit_aer import AerSimulator
 from qiskit.visualization import circuit_drawer
 import matplotlib.pyplot as plt
+import copy
 
 # Define the main application class
 class QuantumChallengeApp:
@@ -35,6 +36,7 @@ class QuantumChallengeApp:
         if gate == "X":
             if self.current_level < 3:
                 self.circuit.x(0)
+                print('applied x gate in apply_gate')
             else:
                 self.circuit.x(self.selected_qubit)
         elif gate == "H":
@@ -66,6 +68,13 @@ class QuantumChallengeApp:
         self.init_circuit()
         self.applied_gates = []
 
+    def go_next_level(self):
+        """
+        Reset the quantum circuit to its initial state.
+        """
+        self.init_circuit()
+        self.applied_gates = []
+
     def refresh_game(self):
         """
         Reset the game to level 1.
@@ -81,11 +90,11 @@ class QuantumChallengeApp:
         bool: True if the last level is completed, otherwise False.
         """
         self.current_level += 1
-        if self.current_level > 3:
-            return True
-        else:
-            self.reset_circuit()
-            return False
+        # if self.current_level > 3:
+        #     return True
+        # else:
+        self.reset_circuit()
+        return False
 
     def check_solution(self):
         """
@@ -95,8 +104,10 @@ class QuantumChallengeApp:
         bool: True if the solution is correct, otherwise False.
         """
         print("checking results... please wait")
+        print("applied gates are: ", self.applied_gates)
+        print("current level is: ", self.current_level)
         self.circuit.save_statevector()
-        simulated_circuit = self.circuit
+        simulated_circuit = QuantumCircuit(1) if self.current_level < 3 else QuantumCircuit(2)
         for gate in self.applied_gates:
             if self.current_level < 3:
                 if gate == "X":
@@ -110,9 +121,12 @@ class QuantumChallengeApp:
                     simulated_circuit.h(self.selected_qubit)
                 elif gate == "CNOT":
                     simulated_circuit.cx(0, 1)
+        print('------- printing simulated circuit -------\n')
+        print(simulated_circuit.draw(output='text'))
 
+        simulated_circuit.save_statevector()
         simulator = AerSimulator(method='statevector')
-        compiled_circuit = transpile(self.circuit, simulator)
+        compiled_circuit = transpile(simulated_circuit, simulator)
         sim_result = simulator.run(compiled_circuit).result()
         statevector = sim_result.get_statevector(compiled_circuit)
 
@@ -129,6 +143,8 @@ class QuantumChallengeApp:
         state_probabilities = np.abs(statevector_np) ** 2
         self.circuit.data.clear()
 
+        print('target_probabilities: ', target_probabilities)
+        print('state_probabilities: ', state_probabilities)
         return np.allclose(state_probabilities, target_probabilities, atol=1e-2)
 
     def draw_circuit(self):
@@ -138,9 +154,9 @@ class QuantumChallengeApp:
         Returns:
         matplotlib.figure.Figure: The figure of the drawn quantum circuit.
         """
-        print("inside draw circuit")
+        print("------- inside draw circuit -------\n")
         print(self.applied_gates)
-        simulated_circuit = self.circuit
+        simulated_circuit = QuantumCircuit(1) if self.current_level < 3 else QuantumCircuit(2)
         for gate in self.applied_gates:
             if self.current_level < 3:
                 if gate == "X":
@@ -167,7 +183,7 @@ class QuantumChallengeApp:
         self.init_circuit()
         print("see self.circuit above")
         print()
-        simulated_circuit = self.circuit
+        simulated_circuit = QuantumCircuit(1) if self.current_level < 3 else QuantumCircuit(2)
         for gate in self.applied_gates:
             if self.current_level < 3:
                 if gate == "X":
@@ -223,36 +239,52 @@ def main():
         unsafe_allow_html=True
     )
 
-    cols = st.columns(2)
+    if app.current_level <= 3: 
 
-    gate = st.selectbox('Select Gate', ['X', 'H', 'CNOT'] if app.current_level == 3 else ['X', 'H'])
+        gate = st.selectbox('Select Gate', ['X', 'H', 'CNOT'] if app.current_level == 3 else ['X', 'H'])
 
-    if st.button('Apply Gate'):
-        app.apply_gate(gate)
-        cols[1].pyplot(app.plot_statevector())
+        cols = st.columns(2)
+
+        if st.button('Apply Gate'):
+            # applies gate 
+            app.apply_gate(gate)
+
+        if st.button('Check Solution'): 
+            if app.check_solution():
+                st.success("Congratulations! You've completed the level. Play the Next Level")
+            else:
+                st.error("The solution is not correct. Please try again.")        
+
+        if st.button('Reset'):
+            app.reset_circuit()
+
+        if st.button('Next Level'):
+            if app.check_solution():
+                app.next_level()
+                if app.current_level > 3:
+                    st.info("You are an Advanced Quantum user! You have reached the end of the game!")
+                    # Clear columns content
+                    for col in cols:
+                        col.empty()
+                    st.image("winner.png")
+                else:
+                    app.go_next_level()
+
         cols[0].pyplot(app.draw_circuit())
-        
-    if app.check_solution():
-        st.success("Congratulations! You've completed the level. Play the Next Level")
-        if app.next_level():
-            st.info("You are an Advanced Quantum user! You have Reached the end of the game!!")
-            cols[0].empty()
-            cols[1].empty()
-            st.image("winner.png")
-    else:
-        st.error("The solution is not correct. Please try again.")        
-
-    if st.button('Reset'):
-        app.reset_circuit()
-        cols[0].pyplot(app.draw_circuit())
         cols[1].pyplot(app.plot_statevector())
+
+    else: 
+        st.info("You are an Advanced Quantum user! You have Reached the end of the game!!")
+        st.image("winner.png")
 
     if st.button("Refresh Game"):
         app.refresh_game()
 
+    
+
+
+
     if st.session_state.get('first_plot', True):
-        cols[0].pyplot(app.draw_circuit())
-        cols[1].pyplot(app.plot_statevector())
         st.session_state.first_plot = False
 
 main()
