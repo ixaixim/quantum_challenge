@@ -135,10 +135,9 @@ def check_solution(circuit, current_level, applied_gates):
 
     target_probabilities = np.abs(target_state) ** 2
     state_probabilities = np.abs(statevector_np) ** 2
-    circuit.data.clear()
-
     print('target_probabilities: ', target_probabilities)
     print('state_probabilities: ', state_probabilities)
+    simulated_circuit.data.clear()
     return np.allclose(state_probabilities, target_probabilities, atol=1e-2)
 
 def draw_circuit(circuit, current_level, applied_gates):
@@ -192,6 +191,7 @@ def plot_statevector(circuit, current_level, applied_gates):
     ax.set_xticklabels([f"|{i}⟩" for i in states])
     ax.set_ylabel('Probability')
     ax.set_title('Statevector Probabilities')
+    simulated_circuit.data.clear()
     return fig
 
 #######################################################
