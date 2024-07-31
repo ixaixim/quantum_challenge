@@ -4,6 +4,7 @@ from qiskit import QuantumCircuit, transpile
 from qiskit_aer import AerSimulator
 from qiskit.visualization import circuit_drawer
 import matplotlib.pyplot as plt
+import matplotlib
 matplotlib.use('Agg')  # Use the 'Agg' backend for non-interactive environments
 
 
