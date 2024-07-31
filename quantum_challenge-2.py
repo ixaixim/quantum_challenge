@@ -172,9 +172,10 @@ def generic_level(current_level):
     st.markdown("<br><br>", unsafe_allow_html=True)
 
     cols = st.columns(2)
-    cols[0].pyplot(draw_circuit(circuit, current_level, st.session_state.applied_gates))
-    cols[1].pyplot(plot_statevector(circuit, current_level, st.session_state.applied_gates))
-    
+    st.session_state.fig_circuit = draw_circuit(circuit, current_level, st.session_state.applied_gates)
+    st.session_state.fig_probs = plot_statevector(circuit, current_level, st.session_state.applied_gates)
+    cols[0].pyplot(st.session_state.fig_circuit)
+    cols[1].pyplot(st.session_state.fig_probs)    
     # Check solution button
     # if st.button('Check Solution'): 
     st.markdown(
@@ -421,9 +422,17 @@ if 'page' not in st.session_state:
 if 'current_page' not in st.session_state:
     st.session_state.current_page = "home"
 
-# Reset applied gates if page changes
+if 'fig_circuit' not in st.session_state:
+    st.session_state.fig_circuit = None
+if 'fig_probs' not in st.session_state:
+    st.session_state.fig_probs = None
+
+# Reset applied gates and plots if page changes
 if page != st.session_state.current_page:
     st.session_state.applied_gates = []
+    plt.close(st.session_state.fig_circuit)
+    plt.close(st.session_state.fig_probs)
+
 
 # Initialize the session state for applied gates
 if 'applied_gates' not in st.session_state:
