@@ -83,10 +83,17 @@ def explanation_page():
         unsafe_allow_html=True
     )
     st.markdown("<h4>CNOT Gate</h4>", unsafe_allow_html=True)
+
     st.markdown(
         "<p style='font-size:24px;'>The CNOT gate creates an entangled state between two qubits, linking their states.</p>", 
         unsafe_allow_html=True
     )
+
+
+
+
+
+    st.markdown("Developed with ❤️ by the VW Quantum Team Doctorands, Neel Misciasci and Chinonso Calistus Onah")
 
 
 def tutorial_page():
@@ -121,6 +128,9 @@ def tutorial_page():
         "<p style='font-size:24px;'>5. Have fun! If you win the three levels, you can take a piece of 🍬🍭. You deserved it!</p>", 
         unsafe_allow_html=True
     )
+
+    st.markdown("Developed with ❤️ by the VW Quantum Team Doctorands, Neel Misciasci and Chinonso Calistus Onah")
+
 
 
 
